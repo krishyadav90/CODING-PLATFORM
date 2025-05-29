@@ -881,6 +881,7 @@ public class Main {
           >
             <option value="javascript">JavaScript</option>
             <option value="java">Java</option>
+            <option value="python">Python</option>
           </select>
           <button
             onClick={runCode}
@@ -965,7 +966,7 @@ public class Main {
           >
             <label
               htmlFor="snippet-select"
-              style={{ color: textColor, fontWeight: "600", minWidth: "100px" }}
+              style={{ color: "0.75rem", marginBottom: "10px" }}
             >
               Insert Snippet:
             </label>
@@ -993,7 +994,7 @@ public class Main {
                 Select snippet...
               </option>
               {Object.keys(snippets).map((key) => (
-                <option key={key} value={key}>
+                <option key={key}>
                   {key}
                 </option>
               ))}
