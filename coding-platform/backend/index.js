@@ -168,8 +168,10 @@ app.post("/run", (req, res) => {
 
   if (!code) return res.json({ output: "Error: No code provided" });
 
-  if (language !== "java" && language !== "javascript")
-    return res.json({ output: "Error: Only Java and JavaScript are supported." });
+  const supportedLanguages = ["java", "javascript", "python"];
+  if (!supportedLanguages.includes(language)) {
+    return res.json({ output: `Error: Only ${supportedLanguages.join(", ")} are supported.` });
+  }
 
   const inputFileName = "input.txt";
   fs.writeFileSync(inputFileName, input || "");
@@ -215,7 +217,7 @@ app.post("/run", (req, res) => {
         return res.json({ output: runStdout });
       });
     });
-  } else {
+  } else if (language === "javascript") {
     const fileName = "script.js";
     const wrappedCode = `
       const fs = require('fs');
@@ -228,6 +230,26 @@ app.post("/run", (req, res) => {
     fs.writeFileSync(fileName, wrappedCode);
 
     const runCmd = `node ${fileName}`;
+
+    exec(runCmd, { timeout: 5000 }, (err, stdout, stderr) => {
+      safeDelete(fileName);
+      safeDelete(inputFileName);
+
+      if (err) {
+        return res.json({
+          output: err.killed
+            ? "Error: Execution timed out."
+            : "Runtime Error:\n" + stderr
+        });
+      }
+
+      return res.json({ output: stdout });
+    });
+  } else if (language === "python") {
+    const fileName = "script.py";
+    fs.writeFileSync(fileName, code);
+
+    const runCmd = `python ${fileName} < ${inputFileName}`;
 
     exec(runCmd, { timeout: 5000 }, (err, stdout, stderr) => {
       safeDelete(fileName);
