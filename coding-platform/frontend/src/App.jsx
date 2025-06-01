@@ -1,518 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import axios from "axios";
+import Notification from "./Notification";
+import useNotification from "./useNotification";
+import InputModal from "./InputModal";
+import LoginModal from "./LoginModal";
+import RegisterModal from "./RegisterModal";
+import HistoryModal from "./HistoryModal";
+import ProfileModal from "./ProfileModal";
+import snippets from "./snippets";
+import * as Y from "yjs";
+import { WebsocketProvider } from "y-websocket";
+import { MonacoBinding } from "y-monaco";
+import io from "socket.io-client";
 
-function InputModal({ visible, onClose, onSubmit, darkMode }) {
-  const [tempInput, setTempInput] = useState("");
+// Configure Axios baseURL
+axios.defaults.baseURL = "http://localhost:5000";
 
-  if (!visible) return null;
+// Initialize Socket.IO client
+const socket = io("http://localhost:5000");
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: darkMode ? "#1f2a38" : "#fff",
-          color: darkMode ? "#e0e0e0" : "#222",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "320px",
-          boxShadow: darkMode
-            ? "0 2px 10px rgba(0,0,0,0.8)"
-            : "0 2px 10px rgba(0,0,0,0.3)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <h3 style={{ marginTop: 0, marginBottom: "10px" }}>Enter Program Input</h3>
-        <textarea
-          rows={6}
-          style={{
-            width: "100%",
-            resize: "vertical",
-            padding: "8px",
-            borderRadius: "5px",
-            border: `1px solid ${darkMode ? "#444" : "#ccc"}`,
-            backgroundColor: darkMode ? "#263647" : "#fff",
-            color: darkMode ? "#e0e0e0" : "#222",
-            fontFamily: "monospace",
-            fontSize: "1rem",
-            outline: "none",
-          }}
-          value={tempInput}
-          onChange={(e) => setTempInput(e.target.value)}
-          placeholder="Enter input here..."
-        />
-        <div
-          style={{
-            marginTop: "15px",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "10px",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              padding: "6px 14px",
-              backgroundColor: darkMode ? "#444" : "#eee",
-              color: darkMode ? "#eee" : "#222",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              onSubmit(tempInput);
-              onClose();
-            }}
-            style={{
-              padding: "6px 14px",
-              backgroundColor: "#007acc",
-              color: "#fff",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LoginModal({ visible, onClose, onLogin, darkMode }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  if (!visible) return null;
-
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError("Email and password are required");
-      return;
-    }
-    try {
-      const response = await axios.post("/login", { email, password });
-      onLogin(response.data.token);
-      onClose();
-    } catch (err) {
-      setError(err.response?.data?.error || "Login failed");
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: darkMode ? "#1f2a38" : "#fff",
-          color: darkMode ? "#e0e0e0" : "#222",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "320px",
-          boxShadow: darkMode
-            ? "0 2px 10px rgba(0,0,0,0.8)"
-            : "0 2px 10px rgba(0,0,0,0.3)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <h3 style={{ marginTop: 0, marginBottom: "10px" }}>Login</h3>
-        {error && <p style={{ color: "red", margin: "0 0 10px" }}>{error}</p>}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            padding: "8px",
-            marginBottom: "10px",
-            borderRadius: "5px",
-            border: `1px solid ${darkMode ? "#444" : "#ccc"}`,
-            backgroundColor: darkMode ? "#263647" : "#fff",
-            color: darkMode ? "#e0e0e0" : "#222",
-            outline: "none",
-          }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            padding: "8px",
-            marginBottom: "10px",
-            borderRadius: "5px",
-            border: `1px solid ${darkMode ? "#444" : "#ccc"}`,
-            backgroundColor: darkMode ? "#263647" : "#fff",
-            color: darkMode ? "#e0e0e0" : "#222",
-            outline: "none",
-          }}
-        />
-        <div
-          style={{
-            marginTop: "15px",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "10px",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              padding: "6px 14px",
-              backgroundColor: darkMode ? "#444" : "#eee",
-              color: darkMode ? "#eee" : "#222",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleLogin}
-            style={{
-              padding: "6px 14px",
-              backgroundColor: "#007acc",
-              color: "#fff",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
-          >
-            Login
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RegisterModal({ visible, onClose, onRegister, darkMode }) {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  if (!visible) return null;
-
-  const handleRegister = async () => {
-    if (!username || !email || !password) {
-      setError("All fields are required");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Invalid email format");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-    try {
-      const response = await axios.post("/register", { username, email, password });
-      onRegister(response.data.token);
-      onClose();
-    } catch (err) {
-      setError(err.response?.data?.error || "Registration failed");
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: darkMode ? "#1f2a38" : "#fff",
-          color: darkMode ? "#e0e0e0" : "#222",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "320px",
-          boxShadow: darkMode
-            ? "0 2px 10px rgba(0,0,0,0.8)"
-            : "0 2px 10px rgba(0,0,0,0.3)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <h3 style={{ marginTop: 0, marginBottom: "10px" }}>Register</h3>
-        {error && <p style={{ color: "red", margin: "0 0 10px" }}>{error}</p>}
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={{
-            padding: "8px",
-            marginBottom: "10px",
-            borderRadius: "5px",
-            border: `1px solid ${darkMode ? "#444" : "#ccc"}`,
-            backgroundColor: darkMode ? "#263647" : "#fff",
-            color: darkMode ? "#e0e0e0" : "#222",
-            outline: "none",
-          }}
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            padding: "8px",
-            marginBottom: "10px",
-            borderRadius: "5px",
-            border: `1px solid ${darkMode ? "#444" : "#ccc"}`,
-            backgroundColor: darkMode ? "#263647" : "#fff",
-            color: darkMode ? "#e0e0e0" : "#222",
-            outline: "none",
-          }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            padding: "8px",
-            marginBottom: "10px",
-            borderRadius: "5px",
-            border: `1px solid ${darkMode ? "#444" : "#ccc"}`,
-            backgroundColor: darkMode ? "#263647" : "#fff",
-            color: darkMode ? "#e0e0e0" : "#222",
-            outline: "none",
-          }}
-        />
-        <div
-          style={{
-            marginTop: "15px",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "10px",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              padding: "6px 14px",
-              backgroundColor: darkMode ? "#444" : "#eee",
-              color: darkMode ? "#eee" : "#222",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleRegister}
-            style={{
-              padding: "6px 14px",
-              backgroundColor: "#007acc",
-              color: "#fff",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
-          >
-            Register
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function HistoryModal({ visible, onClose, snippets, darkMode, onSelectSnippet }) {
-  if (!visible) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: darkMode ? "#1f2a38" : "#fff",
-          color: darkMode ? "#e0e0e0" : "#222",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "500px",
-          maxHeight: "80vh",
-          overflowY: "auto",
-          boxShadow: darkMode
-            ? "0 2px 10px rgba(0,0,0,0.8)"
-            : "0 2px 10px rgba(0,0,0,0.3)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <h3 style={{ marginTop: 0, marginBottom: "10px" }}>Code History</h3>
-        {snippets.length === 0 ? (
-          <p>No saved snippets.</p>
-        ) : (
-          snippets.map((snippet) => (
-            <div
-              key={snippet._id}
-              style={{
-                padding: "10px",
-                border: `1px solid ${darkMode ? "#444" : "#ccc"}`,
-                borderRadius: "5px",
-                marginBottom: "10px",
-                cursor: "pointer",
-              }}
-              onClick={() => onSelectSnippet(snippet)}
-            >
-              <strong>{snippet.title}</strong> ({snippet.language})
-              <br />
-              <small>{new Date(snippet.createdAt).toLocaleString()}</small>
-              <pre style={{ margin: "5px 0", fontSize: "0.9rem" }}>
-                {snippet.code.substring(0, 100) + (snippet.code.length > 100 ? "..." : "")}
-              </pre>
-            </div>
-          ))
-        )}
-        <button
-          onClick={onClose}
-          style={{
-            padding: "6px 14px",
-            backgroundColor: darkMode ? "#444" : "#eee",
-            color: darkMode ? "#eee" : "#222",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-            fontWeight: "600",
-            alignSelf: "flex-end",
-          }}
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ProfileModal({ visible, onClose, user, darkMode }) {
-  if (!visible) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: darkMode ? "#1f2a38" : "#fff",
-          color: darkMode ? "#e0e0e0" : "#222",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "320px",
-          boxShadow: darkMode
-            ? "0 2px 10px rgba(0,0,0,0.8)"
-            : "0 2px 10px rgba(0,0,0,0.3)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <h3 style={{ marginTop: 0, marginBottom: "10px" }}>Profile</h3>
-        {user ? (
-          <>
-            <p><strong>Username:</strong> {user.username}</p>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Joined:</strong> {new Date(user.createdAt).toLocaleString()}</p>
-          </>
-        ) : (
-          <p>Loading...</p>
-        )}
-        <button
-          onClick={onClose}
-          style={{
-            padding: "6px 14px",
-            backgroundColor: darkMode ? "#444" : "#eee",
-            color: darkMode ? "#eee" : "#222",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-            fontWeight: "600",
-            alignSelf: "flex-end",
-            marginTop: "15px",
-          }}
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default function App() {
-  const [code, setCode] = useState(`console.log("Hello, World!");`);
+function App() {
+  // State management
+  const [code, setCode] = useState(localStorage.getItem("savedCode") || `console.log("Hello, World!");`);
   const [output, setOutput] = useState("Hello, World!");
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [language, setLanguage] = useState("javascript");
   const [programInput, setProgramInput] = useState("");
   const [isModalOpen, setModalOpen] = useState(false);
@@ -520,89 +32,43 @@ export default function App() {
   const [isRegisterOpen, setRegisterOpen] = useState(false);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false);
+  const [isCollabModalOpen, setCollabModalOpen] = useState(false);
+  const [roomId, setRoomId] = useState("");
+  const [collabRoomId, setCollabRoomId] = useState("");
+  const [connectedUsers, setConnectedUsers] = useState([]);
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [user, setUser] = useState(null);
   const [history, setHistory] = useState([]);
   const [saveTitle, setSaveTitle] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [shareLink, setShareLink] = useState("");
+  const [requestsRemaining, setRequestsRemaining] = useState(null);
+  const [isSnippetInserted, setIsSnippetInserted] = useState(false);
+  const { notification, showNotification, clearNotification } = useNotification();
+  const editorRef = useRef(null);
+  const yDocRef = useRef(null);
+  const providerRef = useRef(null);
+  const bindingRef = useRef(null);
 
-  const snippets = {
-    "Hello World": `console.log("Hello, World!");`,
-    Factorial: `
-function factorial(n) {
-  if (n <= 1) return 1;
-  return n * factorial(n - 1);
-}
-console.log(factorial(5));
-    `.trim(),
-    Fibonacci: `
-function fibonacci(n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
-console.log(fibonacci(7));
-    `.trim(),
-    Palindrome: `
-function isPalindrome(str) {
-  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, "");
-  return cleaned === cleaned.split("").reverse().join("");
-}
-console.log(isPalindrome("Racecar")); // true
-console.log(isPalindrome("Hello"));   // false
-  `.trim(),
-    Odd: `
-function isOdd(num) {
-  return num % 2 !== 0;
-}
-console.log(isOdd(7));  // true
-console.log(isOdd(10)); // false
-  `.trim(),
-    Even: `
-function isEven(num) {
-  return num % 2 === 0;
-}
-console.log(isEven(8));  // true
-console.log(isEven(13)); // false
-  `.trim(),
-    Calculator: `
-function calculator(a, b, operator) {
-  switch(operator) {
-    case '+': return a + b;
-    case '-': return a - b;
-    case '*': return a * b;
-    case '/': return b !== 0 ? a / b : 'Error: Divide by zero';
-    default: return 'Invalid operator';
-  }
-}
-console.log(calculator(10, 5, '+')); // 15
-console.log(calculator(10, 0, '/')); // Error: Divide by zero
-    `.trim(),
-    javaSnippet: `
-import java.util.Scanner;
-public class Main {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        int number = scanner.nextInt();
-        scanner.nextLine(); // consume newline
-        String text = scanner.nextLine();
-        System.out.println("Number: " + number);
-        System.out.println("Text: " + text);
-        // Factorial
-        int factorial = 1;
-        for (int i = 1; i <= number; i++) {
-            factorial *= i;
-        }
-        System.out.println("Factorial: " + factorial);
-        // Palindrome check
-        String reversed = new StringBuilder(text).reverse().toString();
-        System.out.println("Is Palindrome: " + text.equalsIgnoreCase(reversed));
-        // Uppercase
-        System.out.println("Uppercase: " + text.toUpperCase());
-        scanner.close();
+  // Auto-save code to localStorage, excluding snippet insertions
+  useEffect(() => {
+    if (!isSnippetInserted && !collabRoomId) {
+      const timer = setTimeout(() => {
+        localStorage.setItem("savedCode", code);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-}
-`.trim(),
-  };
+  }, [code, isSnippetInserted, collabRoomId]);
 
+  // Reset isSnippetInserted after manual code changes
+  useEffect(() => {
+    if (isSnippetInserted) {
+      setIsSnippetInserted(false);
+    }
+  }, [code]);
+
+  // Fetch user profile
   useEffect(() => {
     const fetchProfile = async () => {
       if (token) {
@@ -615,23 +81,109 @@ public class Main {
           console.error("Failed to fetch profile:", err);
           setToken(null);
           localStorage.removeItem("token");
+          showNotification("Failed to load profile", "error");
         }
       }
     };
     fetchProfile();
   }, [token]);
 
+  // Fetch history
+  useEffect(() => {
+    if (isHistoryOpen && token) {
+      fetchHistory();
+    }
+  }, [page, isHistoryOpen, token]);
+
+  // Check for shareId or roomId in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get("shareId");
+    const roomIdFromUrl = urlParams.get("roomId");
+
+    if (shareId) {
+      fetchSharedSnippet(shareId);
+    } else if (roomIdFromUrl && token) {
+      setRoomId(roomIdFromUrl);
+      showNotification("Collaboration room detected. Click 'Collaborate' to join.", "info");
+    }
+  }, [token]);
+
+  // Initialize Yjs for collaboration
+  useEffect(() => {
+    if (collabRoomId && editorRef.current && token) {
+      const yDoc = new Y.Doc();
+      yDocRef.current = yDoc;
+      const provider = new WebsocketProvider(`ws://localhost:5000`, collabRoomId, yDoc, {
+        connect: true,
+        params: { token },
+      });
+      providerRef.current = provider;
+
+      const yText = yDoc.getText("code");
+      const editorModel = editorRef.current.getModel();
+      const binding = new MonacoBinding(
+        yText,
+        editorModel,
+        new Set([editorRef.current]),
+        provider.awareness
+      );
+      bindingRef.current = binding;
+
+      // Sync local code state with Yjs document
+      yText.observe(() => {
+        const yjsCode = yText.toString();
+        setCode(yjsCode);
+      });
+
+      // Update connected users
+      provider.awareness.on("change", () => {
+        const users = Array.from(provider.awareness.getStates().values()).map(
+          (state) => state.user || { name: "Anonymous" }
+        );
+        setConnectedUsers(users);
+      });
+
+      // Set user awareness
+      provider.awareness.setLocalStateField("user", {
+        name: user?.username || "Anonymous",
+        color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+      });
+
+      socket.emit("join-room", { roomId: collabRoomId, userId: user?.username || "Anonymous" });
+
+      socket.on("init-code", (initCode) => {
+        if (!yText.toString()) {
+          yText.insert(0, initCode);
+        }
+        setCode(initCode);
+        localStorage.setItem("savedCode", initCode);
+      });
+
+      return () => {
+        binding.destroy();
+        provider.destroy();
+        yDoc.destroy();
+        socket.off("init-code");
+        providerRef.current = null;
+        yDocRef.current = null;
+        bindingRef.current = null;
+      };
+    }
+  }, [collabRoomId, token, user]);
+
+  // Run code
   const runCode = async () => {
     try {
       setOutput("Running...");
       const startTime = performance.now();
 
-      let codeToRun = code;
+      let codeToRun = collabRoomId ? yDocRef.current.getText("code").toString() : code;
       if (language === "javascript") {
         codeToRun = `
           console.time("Execution Time");
           try {
-            ${code}
+            ${codeToRun}
           } finally {
             console.timeEnd("Execution Time");
           }
@@ -644,85 +196,292 @@ public class Main {
         input: programInput,
       });
 
+      const remaining = response.headers["ratelimit-remaining"];
+      setRequestsRemaining(remaining ? parseInt(remaining) : null);
+
       const endTime = performance.now();
-      const timeTaken = (endTime - startTime).toFixed(2);
+      const timeTaken = (endTime - startTime).toFixed(1);
 
       let finalOutput = response.data.output;
-      if (language === "java") {
+      if (language !== "javascript") {
         finalOutput += `\nExecution Time: ${timeTaken} ms`;
       }
 
       setOutput(finalOutput);
-    } catch (error) {
-      setOutput("Error: " + (error.message || "Failed to execute code"));
+    } catch (err) {
+      const errorMsg = err.response?.status === 429
+        ? "Too many requests. Please try again later."
+        : err.response?.data?.error || "Failed to execute code";
+      setOutput("Error: " + errorMsg);
+      showNotification(errorMsg, "error");
     }
   };
 
+  // Save code
   const saveCode = async () => {
     if (!token) {
       setOutput("Error: Please login to save code");
+      showNotification("Please login to save code", "error");
       return;
     }
     if (!saveTitle) {
       setOutput("Error: Please enter a title for the code");
+      showNotification("Please enter a title for the code", "error");
       return;
     }
     try {
-      await axios.post(
+      const codeToSave = collabRoomId ? yDocRef.current.getText("code").toString() : code;
+      const response = await axios.post(
         "/save-code",
+        { title: saveTitle, code: codeToSave, language },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const remaining = response.headers["ratelimit-remaining"];
+      setRequestsRemaining(remaining ? parseInt(remaining) : null);
+
+      setOutput("Code saved successfully");
+      showNotification("Code saved successfully", "success");
+      setSaveTitle("");
+      localStorage.setItem("savedCode", codeToSave);
+      if (isHistoryOpen) {
+        setPage(1);
+        fetchHistory();
+      }
+    } catch (err) {
+      const errorMsg = err.response?.status === 429
+        ? "Too many requests. Please try again later."
+        : err.response?.data?.error || "Failed to save code";
+      setOutput("Error: " + errorMsg);
+      showNotification(errorMsg, "error");
+    }
+  };
+
+  // Share code
+  const shareCode = async () => {
+    if (!token) {
+      setOutput("Error: Please login to share code");
+      showNotification("Please login to share code", "error");
+      return;
+    }
+    try {
+      const codeToShare = collabRoomId ? yDocRef.current.getText("code").toString() : code;
+      const response = await axios.post(
+        "/share-code",
+        { code: codeToShare, language, title: saveTitle || "Shared Code" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const remaining = response.headers["ratelimit-remaining"];
+      setRequestsRemaining(remaining ? parseInt(remaining) : null);
+
+      const shareUrl = `${window.location.origin}?shareId=${response.data.shareId}`;
+      setShareLink(shareUrl);
+      setOutput("Code shared successfully");
+      showNotification("Code shared successfully. Link copied to clipboard!", "success");
+      navigator.clipboard.writeText(shareUrl);
+    } catch (err) {
+      const errorMsg = err.response?.status === 429
+        ? "Too many requests. Please try again later."
+        : err.response?.data?.error || "Failed to share code";
+      setOutput("Error: " + errorMsg);
+      showNotification(errorMsg, "error");
+    }
+  };
+
+  // Start collaboration
+  const startCollaboration = async () => {
+    if (!token) {
+      setOutput("Error: Please login to start collaboration");
+      showNotification("Please login to start collaboration", "error");
+      return;
+    }
+    if (!saveTitle) {
+      setOutput("Error: Please enter a title for the collaboration");
+      showNotification("Please enter a title for the collaboration", "error");
+      return;
+    }
+    try {
+      const response = await axios.post(
+        "/collaborate",
         { title: saveTitle, code, language },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setOutput("Code saved successfully");
-      setSaveTitle("");
+      const { roomId } = response.data;
+      setCollabRoomId(roomId);
+      setShareLink(`${window.location.origin}?roomId=${roomId}`);
+      setOutput("Collaboration started successfully");
+      showNotification("Collaboration started. Share the link with others!", "success");
+      navigator.clipboard.writeText(`${window.location.origin}?roomId=${roomId}`);
+      setCollabModalOpen(false);
     } catch (err) {
-      setOutput("Error: " + (err.response?.data?.error || "Failed to save code"));
+      const errorMsg = err.response?.status === 429
+        ? "Too many requests. Please try again later."
+        : err.response?.data?.error || "Failed to start collaboration";
+      setOutput("Error: " + errorMsg);
+      showNotification(errorMsg, "error");
     }
   };
 
-  const fetchHistory = async () => {
+  // Join collaboration
+  const joinCollaboration = async () => {
     if (!token) {
-      setOutput("Error: Please login to view history");
+      setOutput("Error: Please login to join collaboration");
+      showNotification("Please login to join collaboration", "error");
+      return;
+    }
+    if (!roomId) {
+      setOutput("Error: Please enter a room ID");
+      showNotification("Please enter a room ID", "error");
       return;
     }
     try {
-      const response = await axios.get("/history", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setHistory(response.data);
-      setHistoryOpen(true);
+      const response = await axios.post(
+        "/collaborate/join",
+        { roomId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const { collaboration } = response.data;
+      setCollabRoomId(roomId);
+      setLanguage(collaboration.language);
+      setSaveTitle(collaboration.title);
+      setOutput("Joined collaboration successfully");
+      showNotification("Joined collaboration successfully", "success");
+      setCollabModalOpen(false);
+      setRoomId("");
     } catch (err) {
-      setOutput("Error: " + (err.response?.data?.error || "Failed to fetch history"));
+      const errorMsg = err.response?.data?.error || "Failed to join collaboration";
+      setOutput("Error: " + errorMsg);
+      showNotification(errorMsg, "error");
     }
   };
 
+  // Leave collaboration
+  const leaveCollaboration = () => {
+    if (providerRef.current) {
+      providerRef.current.destroy();
+    }
+    if (yDocRef.current) {
+      const currentCode = yDocRef.current.getText("code").toString();
+      setCode(currentCode);
+      localStorage.setItem("savedCode", currentCode);
+      yDocRef.current.destroy();
+    }
+    socket.emit("leave-room", { roomId: collabRoomId, userId: user?.username || "Anonymous" });
+    socket.off("init-code");
+    setCollabRoomId("");
+    setConnectedUsers([]);
+    setShareLink("");
+    setOutput("Left collaboration successfully");
+    showNotification("Left collaboration successfully", "success");
+  };
+
+  // Fetch shared snippet
+  const fetchSharedSnippet = async (shareId) => {
+    try {
+      const response = await axios.get(`/share/${shareId}`);
+      setCode(response.data.code);
+      setLanguage(response.data.language);
+      setSaveTitle(response.data.title || "Shared Code");
+      localStorage.setItem("savedCode", response.data.code);
+      setOutput("Loaded shared code");
+      showNotification("Shared code loaded successfully", "success");
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || "Failed to load shared code";
+      setOutput("Error: " + errorMsg);
+      showNotification(errorMsg, "error");
+    }
+  };
+
+  // Fetch history
+  const fetchHistory = async () => {
+    if (!token) {
+      setOutput("Error: Please login to view history");
+      setHistory([]);
+      showNotification("Please login to view history", "error");
+      return;
+    }
+    try {
+      console.log("Fetching history for page:", page);
+      setHistory([]);
+      const response = await axios.get(`/history?page=${page}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("History response:", response.data);
+      setHistory(response.data.snippets);
+      setTotalPages(response.data.totalPages || 1);
+    } catch (err) {
+      console.error("Fetch history error:", err);
+      const errorMsg = err.response?.data?.error || "Failed to fetch history";
+      setOutput("Error: " + errorMsg);
+      setHistory([]);
+      showNotification(errorMsg, "error");
+    }
+  };
+
+  // Delete snippet
+  const deleteSnippet = async (snippetId) => {
+    if (!token) {
+      setOutput("Error: Please login to delete snippets");
+      showNotification("Please login to delete snippets", "error");
+      return;
+    }
+    try {
+      const response = await axios.delete(`/delete-snippet/${snippetId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setOutput("Snippet deleted successfully");
+      showNotification("Snippet deleted successfully", "success");
+      setPage(1);
+      fetchHistory();
+    } catch (err) {
+      const errorMsg = err.response?.status === 429
+        ? "Too many requests. Please try again later."
+        : err.response?.data?.error || "Failed to delete snippet";
+      setOutput(`Error: ${errorMsg}`);
+      showNotification(errorMsg, "error");
+    }
+  };
+
+  // Handle logout
   const handleLogout = () => {
+    if (collabRoomId) {
+      leaveCollaboration();
+    }
     setToken(null);
     setUser(null);
     setHistory([]);
     localStorage.removeItem("token");
     setOutput("Logged out successfully");
+    showNotification("Logged out successfully", "success");
   };
 
+  // Handle snippet selection
   const handleSelectSnippet = (snippet) => {
-    setCode(snippet.code);
+    if (collabRoomId && yDocRef.current) {
+      const yText = yDocRef.current.getText("code");
+      yText.delete(0, yText.length);
+      yText.insert(0, snippet.code);
+    } else {
+      setCode(snippet.code);
+      localStorage.setItem("savedCode", snippet.code);
+    }
     setLanguage(snippet.language);
     setHistoryOpen(false);
   };
 
+  // Styling variables
   const backgroundGradient = darkMode
-    ? "linear-gradient(135deg, #0f2027, #203a43, #2c5364)"
-    : "linear-gradient(135deg, #f6d365, #fda085)";
+    ? "linear-gradient(135deg, #0a0f1a, #1e2a44, #3b4b6a)"
+    : "linear-gradient(135deg, #e0e7ff, #c3dafe)";
   const editorGradient = darkMode
-    ? "linear-gradient(145deg, #1c2833, #263647)"
-    : "linear-gradient(145deg, #ffffff, #e2e8f0)";
+    ? "linear-gradient(145deg, #141c2f, #1f2a44)"
+    : "linear-gradient(145deg, #ffffff, #e0e7ff)";
   const outputGradient = darkMode
-    ? "linear-gradient(145deg, #16212b, #2e3a4a)"
-    : "linear-gradient(145deg, #fefefe, #cbd5e1)";
-  const textColor = darkMode ? "#e0e0e0" : "#222";
-  const borderColor = darkMode ? "#444" : "#ccc";
-  const buttonBg = "#007acc";
-  const buttonHoverBg = "#005f99";
+    ? "linear-gradient(145deg, #0f172a, #1e293b)"
+    : "linear-gradient(145deg, #f8fafc, #e2e8f0)";
+  const textColor = darkMode ? "#e2e8f0" : "#1e293b";
+  const borderColor = darkMode ? "#4b5e8c" : "#93c5fd";
+  const buttonGradient = "linear-gradient(90deg, #3b82f6, #a855f7)";
+  const buttonHoverGradient = "linear-gradient(90deg, #2563eb, #9333ea)";
 
   return (
     <div
@@ -731,86 +490,168 @@ public class Main {
         width: "100vw",
         background: backgroundGradient,
         color: textColor,
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        display: "flex",
-        flexDirection: "column",
+        fontFamily: "'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        fontWeight: 400,
+        letterSpacing: "0.02em",
+        display: "grid",
+        gridTemplateRows: "auto 1fr",
         overflow: "hidden",
-        padding: "1rem 2rem",
+        padding: "1.5rem",
         boxSizing: "border-box",
-        transition: "background 0.5s ease, color 0.3s ease",
+        transition: "all 0.3s ease",
       }}
     >
-      {/* Header */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+      <Notification message={notification.message} type={notification.type} onClose={clearNotification} />
       <header
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "1rem",
-          paddingBottom: "0.5rem",
+          marginBottom: "1.5rem",
+          paddingBottom: "1rem",
           borderBottom: `1px solid ${borderColor}`,
+          background: darkMode ? "rgba(15, 23, 42, 0.5)" : "rgba(255, 255, 255, 0.5)",
+          backdropFilter: "blur(8px)",
+          borderRadius: "8px",
+          padding: "0.75rem 1.5rem",
         }}
       >
         <h1
           style={{
             margin: 0,
-            fontWeight: "600",
-            fontSize: "1.5rem",
+            fontWeight: 600,
+            fontSize: "1.75rem",
             userSelect: "none",
+            background: buttonGradient,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           }}
         >
-          JS Coding Playground
+          CodeVerse
         </h1>
-
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+          {requestsRemaining !== null && (
+            <span
+              style={{
+                fontSize: "0.95rem",
+                fontWeight: 500,
+                color: darkMode ? "#ffffff" : "#1e293b",
+                background: darkMode ? "rgba(59, 130, 246, 0.2)" : "rgba(59, 130, 246, 0.1)",
+                padding: "0.25rem 0.75rem",
+                borderRadius: "6px",
+                border: `1px solid ${borderColor}`,
+              }}
+            >
+              Requests remaining: {requestsRemaining}
+            </span>
+          )}
+          {collabRoomId && (
+            <span
+              style={{
+                fontSize: "0.95rem",
+                fontWeight: 500,
+                color: darkMode ? "#ffffff" : "#1e293b",
+                background: darkMode ? "rgba(16, 185, 129, 0.2)" : "rgba(16, 185, 129, 0.1)",
+                padding: "0.25rem 0.75rem",
+                borderRadius: "6px",
+                border: `1px solid ${borderColor}`,
+              }}
+            >
+              Room: {collabRoomId} | Users: {connectedUsers.length}
+            </span>
+          )}
           {token ? (
             <>
-              <span style={{ fontWeight: "500" }}>
+              <span style={{ fontWeight: 500, fontSize: "0.95rem" }}>
                 Welcome, {user?.username || "User"}
               </span>
               <button
                 onClick={() => setProfileOpen(true)}
                 style={{
-                  padding: "0.4rem 0.9rem",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
                   color: "#fff",
-                  backgroundColor: buttonBg,
+                  background: buttonGradient,
                   border: "none",
-                  borderRadius: "5px",
+                  borderRadius: "8px",
                   cursor: "pointer",
-                  boxShadow: `0 3px 6px ${buttonBg}80`,
-                  transition: "background-color 0.25s ease",
+                  boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+                  transition: "all 0.3s ease",
+                  userSelect: "none",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = buttonHoverBg)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = buttonBg)
-                }
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = buttonHoverGradient;
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = buttonGradient;
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+                tabIndex={0}
+                aria-label="View profile"
               >
                 Profile
               </button>
+              {collabRoomId && (
+                <button
+                  onClick={leaveCollaboration}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    color: "#fff",
+                    background: "linear-gradient(90deg, #ef4444, #dc2626)",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 15px rgba(239, 68, 68, 0.4)",
+                    transition: "all 0.3s ease",
+                    userSelect: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "linear-gradient(90deg, #dc2626, #b91c1c)";
+                    e.currentTarget.style.transform = "scale(1.05)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "linear-gradient(90deg, #ef4444, #dc2626)";
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                  tabIndex={0}
+                  aria-label="Leave collaboration"
+                >
+                  Leave Collaboration
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 style={{
-                  padding: "0.4rem 0.9rem",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
                   color: "#fff",
-                  backgroundColor: "#dc3545",
+                  background: "linear-gradient(90deg, #ef4444, #dc2626)",
                   border: "none",
-                  borderRadius: "5px",
+                  borderRadius: "8px",
                   cursor: "pointer",
-                  boxShadow: `0 3px 6px #dc354580`,
-                  transition: "background-color 0.25s ease",
+                  boxShadow: "0 4px 15px rgba(239, 68, 68, 0.4)",
+                  transition: "all 0.3s ease",
+                  userSelect: "none",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#b02a37")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#dc3545")
-                }
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(90deg, #dc2626, #b91c1c)";
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(90deg, #ef4444, #dc2626)";
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+                tabIndex={0}
+                aria-label="Logout"
               >
                 Logout
               </button>
@@ -820,46 +661,56 @@ public class Main {
               <button
                 onClick={() => setLoginOpen(true)}
                 style={{
-                  padding: "0.4rem 0.9rem",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
                   color: "#fff",
-                  backgroundColor: buttonBg,
+                  background: buttonGradient,
                   border: "none",
-                  borderRadius: "5px",
+                  borderRadius: "8px",
                   cursor: "pointer",
-                  boxShadow: `0 3px 6px ${buttonBg}80`,
-                  transition: "background-color 0.25s ease",
+                  boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+                  transition: "all 0.3s ease",
+                  userSelect: "none",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = buttonHoverBg)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = buttonBg)
-                }
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = buttonHoverGradient;
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = buttonGradient;
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+                tabIndex={0}
+                aria-label="Login"
               >
                 Login
               </button>
               <button
                 onClick={() => setRegisterOpen(true)}
                 style={{
-                  padding: "0.4rem 0.9rem",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
                   color: "#fff",
-                  backgroundColor: buttonBg,
+                  background: buttonGradient,
                   border: "none",
-                  borderRadius: "5px",
+                  borderRadius: "8px",
                   cursor: "pointer",
-                  boxShadow: `0 3px 6px ${buttonBg}80`,
-                  transition: "background-color 0.25s ease",
+                  boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+                  transition: "all 0.3s ease",
+                  userSelect: "none",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = buttonHoverBg)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = buttonBg)
-                }
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = buttonHoverGradient;
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = buttonGradient;
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+                tabIndex={0}
+                aria-label="Register"
               >
                 Register
               </button>
@@ -869,124 +720,210 @@ public class Main {
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
             style={{
-              padding: "0.3rem 0.6rem",
-              fontSize: "0.9rem",
-              fontWeight: "500",
-              borderRadius: "4px",
+              padding: "0.5rem",
+              fontSize: "0.95rem",
+              fontWeight: 500,
+              borderRadius: "8px",
               border: `1px solid ${borderColor}`,
-              backgroundColor: darkMode ? "#263647" : "#fff",
+              background: darkMode ? "rgba(30, 41, 59, 0.5)" : "rgba(255, 255, 255, 0.5)",
               color: textColor,
               cursor: "pointer",
+              backdropFilter: "blur(4px)",
+              transition: "all 0.3s ease",
             }}
           >
             <option value="javascript">JavaScript</option>
             <option value="java">Java</option>
             <option value="python">Python</option>
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
           </select>
           <button
             onClick={runCode}
             style={{
-              padding: "0.4rem 0.9rem",
-              fontSize: "0.9rem",
-              fontWeight: "600",
+              padding: "0.5rem 1rem",
+              fontSize: "0.95rem",
+              fontWeight: 600,
               color: "#fff",
-              backgroundColor: buttonBg,
+              background: buttonGradient,
               border: "none",
-              borderRadius: "5px",
+              borderRadius: "8px",
               cursor: "pointer",
-              boxShadow: `0 3px 6px ${buttonBg}80`,
-              transition: "background-color 0.25s ease",
+              boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+              transition: "all 0.3s ease",
+              userSelect: "none",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = buttonHoverBg)
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = buttonBg)
-            }
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = buttonHoverGradient;
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = buttonGradient;
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            tabIndex={0}
+            aria-label="Run code"
           >
             Run Code
           </button>
           <button
+            onClick={shareCode}
+            style={{
+              padding: "0.5rem 1rem",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "#fff",
+              background: buttonGradient,
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+              transition: "all 0.3s ease",
+              userSelect: "none",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = buttonHoverGradient;
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = buttonGradient;
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            tabIndex={0}
+            aria-label="Share code"
+          >
+            Share Code
+          </button>
+          <button
+            onClick={() => setCollabModalOpen(true)}
+            style={{
+              padding: "0.5rem 1rem",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "#fff",
+              background: buttonGradient,
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+              transition: "all 0.3s ease",
+              userSelect: "none",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = buttonHoverGradient;
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = buttonGradient;
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            tabIndex={0}
+            aria-label="Start or join collaboration"
+          >
+            Collaborate
+          </button>
+          <button
             onClick={() => setDarkMode(!darkMode)}
             style={{
-              padding: "0.4rem 0.9rem",
-              fontSize: "0.9rem",
-              fontWeight: "600",
-              color: darkMode ? "#eee" : "#222",
-              backgroundColor: darkMode ? "#333" : "#ddd",
+              padding: "0.3rem",
+              fontSize: "1.2rem",
+              width: "2rem",
+              height: "2rem",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              color: darkMode ? "#ffd700" : "#fff",
+              background: darkMode
+                ? "linear-gradient(90deg, #64748b, #475569)"
+                : "linear-gradient(90deg, #93c5fd, #60a5fa)",
               border: "none",
-              borderRadius: "5px",
+              borderRadius: "50%",
               cursor: "pointer",
-              boxShadow: darkMode ? `0 3px 6px #0008` : `0 3px 6px #aaa`,
-              transition: "background-color 0.25s ease, color 0.25s ease",
+              boxShadow: darkMode
+                ? "0 4px 15px rgba(100, 116, 139, 0.4)"
+                : "0 4px 15px rgba(147, 197, 253, 0.4)",
+              transition: "all 0.3s ease",
+              userSelect: "none",
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            tabIndex={0}
+            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
-            {darkMode ? "Light Mode" : "Dark Mode"}
+            {darkMode ? "🌞" : "🌙"}
           </button>
         </div>
       </header>
-
-      {/* Main content */}
       <main
         style={{
-          flex: 1,
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr",
           gap: "1.5rem",
+          height: "100%",
           overflow: "hidden",
         }}
       >
-        {/* Left: Editor + Input */}
         <section
           style={{
-            flex: 2,
             display: "flex",
             flexDirection: "column",
-            borderRadius: "8px",
+            borderRadius: "12px",
             overflow: "hidden",
             border: `1px solid ${borderColor}`,
             background: editorGradient,
-            boxShadow: darkMode
-              ? "0 4px 15px rgba(0,0,0,0.7)"
-              : "0 4px 15px rgba(0,0,0,0.1)",
-            transition: "background 0.5s ease",
+            boxShadow: "0 8px 30px rgba(0, 0, 0, 0.2), 0 4px 10px rgba(59, 130, 246, 0.1)",
+            transition: "all 0.3s ease",
             height: "100%",
           }}
         >
-          {/* Snippet Dropdown + Save Code */}
           <div
             style={{
-              padding: "0.6rem 1rem",
+              padding: "0.75rem 1.5rem",
               borderBottom: `1px solid ${borderColor}`,
-              backgroundColor: darkMode ? "#1f2a38" : "#f9fafb",
+              background: darkMode ? "rgba(15, 23, 42, 0.5)" : "rgba(255, 255, 255, 0.5)",
+              backdropFilter: "blur(8px)",
               userSelect: "none",
               display: "flex",
               alignItems: "center",
-              gap: "0.75rem",
+              gap: "1rem",
             }}
           >
-            <label
-              htmlFor="snippet-select"
-              style={{ color: "0.75rem", marginBottom: "10px" }}
-            >
+            <label htmlFor="snippet-select" style={{ color: textColor, fontWeight: 500 }}>
               Insert Snippet:
             </label>
             <select
               id="snippet-select"
               onChange={(e) => {
                 const val = e.target.value;
-                if (val && snippets[val]) setCode(snippets[val]);
+                if (val && snippets[val]) {
+                  if (collabRoomId && yDocRef.current) {
+                    const yText = yDocRef.current.getText("code");
+                    yText.delete(0, yText.length);
+                    yText.insert(0, snippets[val]);
+                  } else {
+                    setCode(snippets[val]);
+                    setIsSnippetInserted(true);
+                  }
+                }
                 e.target.selectedIndex = 0;
               }}
               style={{
-                padding: "0.3rem 0.6rem",
-                borderRadius: "4px",
+                padding: "0.5rem",
+                borderRadius: "8px",
                 border: `1px solid ${borderColor}`,
-                backgroundColor: darkMode ? "#263647" : "#fff",
+                background: darkMode ? "rgba(30, 41, 59, 0.5)" : "rgba(255, 255, 255, 0.5)",
                 color: textColor,
                 cursor: "pointer",
                 fontSize: "0.95rem",
-                fontWeight: "500",
+                fontWeight: 500,
                 flexGrow: 1,
+                backdropFilter: "blur(4px)",
+                transition: "all 0.3s ease",
               }}
               defaultValue=""
             >
@@ -994,43 +931,50 @@ public class Main {
                 Select snippet...
               </option>
               {Object.keys(snippets).map((key) => (
-                <option key={key}>
-                  {key}
-                </option>
+                <option key={key}>{key}</option>
               ))}
             </select>
             <button
-              onClick={fetchHistory}
-              style={{
-                padding: "0.3rem 0.6rem",
-                fontSize: "0.95rem",
-                fontWeight: "600",
-                color: "#fff",
-                backgroundColor: buttonBg,
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-                boxShadow: `0 3px 6px ${buttonBg}80`,
-                transition: "background-color 0.25s ease",
+              onClick={() => {
+                setPage(1);
+                setHistoryOpen(true);
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = buttonHoverBg)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = buttonBg)
-              }
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                color: "#fff",
+                background: buttonGradient,
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+                transition: "all 0.3s ease",
+                userSelect: "none",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = buttonHoverGradient;
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = buttonGradient;
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              tabIndex={0}
+              aria-label="View history"
             >
               History
             </button>
           </div>
           <div
             style={{
-              padding: "0.6rem 1rem",
+              padding: "0.75rem 1.5rem",
               borderBottom: `1px solid ${borderColor}`,
-              backgroundColor: darkMode ? "#1f2a38" : "#f9fafb",
+              background: darkMode ? "rgba(15, 23, 42, 0.5)" : "rgba(255, 255, 255, 0.5)",
+              backdropFilter: "blur(8px)",
               display: "flex",
               alignItems: "center",
-              gap: "0.75rem",
+              gap: "1rem",
             }}
           >
             <input
@@ -1039,65 +983,137 @@ public class Main {
               value={saveTitle}
               onChange={(e) => setSaveTitle(e.target.value)}
               style={{
-                padding: "0.3rem 0.6rem",
-                borderRadius: "4px",
+                padding: "0.5rem",
+                borderRadius: "8px",
                 border: `1px solid ${borderColor}`,
-                backgroundColor: darkMode ? "#263647" : "#fff",
+                background: darkMode ? "rgba(30, 41, 59, 0.5)" : "rgba(255, 255, 255, 0.5)",
                 color: textColor,
                 fontSize: "0.95rem",
                 flexGrow: 1,
+                backdropFilter: "blur(4px)",
+                transition: "all 0.3s ease",
               }}
             />
             <button
               onClick={saveCode}
               style={{
-                padding: "0.3rem 0.6rem",
+                padding: "0.5rem 1rem",
                 fontSize: "0.95rem",
-                fontWeight: "600",
+                fontWeight: 600,
                 color: "#fff",
-                backgroundColor: buttonBg,
+                background: buttonGradient,
                 border: "none",
-                borderRadius: "5px",
+                borderRadius: "8px",
                 cursor: "pointer",
-                boxShadow: `0 3px 6px ${buttonBg}80`,
-                transition: "background-color 0.25s ease",
+                boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+                transition: "all 0.3s ease",
+                userSelect: "none",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = buttonHoverBg)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = buttonBg)
-              }
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = buttonHoverGradient;
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = buttonGradient;
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              tabIndex={0}
+              aria-label="Save code"
             >
               Save Code
             </button>
           </div>
-          {/* Monaco Editor */}
-          <Editor
-            height="100%"
-            defaultLanguage="javascript"
-            language={language}
-            value={code}
-            onChange={(value) => setCode(value)}
-            theme={darkMode ? "vs-dark" : "light"}
-            options={{
-              fontSize: 15,
-              minimap: { enabled: false },
-              fontFamily:
-                "Consolas, 'Courier New', monospace, 'Fira Code', 'JetBrains Mono'",
-              fontLigatures: true,
-              lineNumbers: "on",
-              smoothScrolling: true,
-              tabSize: 2,
-              wordWrap: "on",
-              automaticLayout: true,
-            }}
-          />
-          {/* Program Input */}
+          {shareLink && (
+            <div
+              style={{
+                padding: "0.75rem 1.5rem",
+                borderBottom: `1px solid ${borderColor}`,
+                background: darkMode ? "rgba(15, 23, 42, 0.5)" : "rgba(255, 255, 255, 0.5)",
+                backdropFilter: "blur(8px)",
+                display: "flex",
+                alignItems: "center",
+                gap: "1rem",
+              }}
+            >
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                style={{
+                  padding: "0.5rem",
+                  borderRadius: "8px",
+                  border: `1px solid ${borderColor}`,
+                  background: darkMode ? "rgba(30, 41, 59, 0.5)" : "rgba(255, 255, 255, 0.5)",
+                  color: textColor,
+                  fontSize: "0.95rem",
+                  flexGrow: "1",
+                  backdropFilter: "blur(4px)",
+                  transition: "all 0.3s ease",
+                  userSelect: "text",
+                }}
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(shareLink);
+                  showNotification("Link copied to clipboard!", "success");
+                }}
+                style={{
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  color: "#fff",
+                  background: buttonGradient,
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+                  transition: "all 0.3s ease",
+                  userSelect: "none",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = buttonHoverGradient;
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = buttonGradient;
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+                tabIndex={0}
+                aria-label="Copy share link"
+              >
+                Copy Link
+              </button>
+            </div>
+          )}
+          <div style={{ flex: "1 1 auto", minHeight: "0" }}>
+            <Editor
+              height="100%"
+              defaultLanguage="javascript"
+              language={language}
+              value={code}
+              onChange={(value) => !collabRoomId && setCode(value)}
+              onMount={(editor) => {
+                editorRef.current = editor;
+              }}
+              theme={darkMode ? "vs-dark" : "light"}
+              options={{
+                fontSize: 16,
+                minimap: { enabled: false },
+                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                fontLigatures: true,
+                lineNumbers: "on",
+                smoothScrolling: true,
+                tabSize: 2,
+                wordWrap: "on",
+                automaticLayout: true,
+              }}
+            />
+          </div>
           <div
             style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: darkMode ? "#1f2a38" : "#f9fafb",
+              padding: "0.75rem 1.5rem",
+              background: darkMode ? "rgba(15, 23, 42, 0.5)" : "rgba(255, 255, 255, 0.5)",
+              backdropFilter: "blur(8px)",
               borderTop: `1px solid ${borderColor}`,
               display: "flex",
               justifyContent: "space-between",
@@ -1105,53 +1121,56 @@ public class Main {
               userSelect: "none",
             }}
           >
-            <span>Program Input:</span>
+            <span style={{ fontWeight: 500 }}>Program Input:</span>
             <button
               onClick={() => setModalOpen(true)}
               style={{
-                cursor: "pointer",
-                padding: "0.2rem 0.5rem",
-                borderRadius: "5px",
-                backgroundColor: buttonBg,
-                border: "none",
+                padding: "0.5rem 1rem",
+                fontSize: "0.95rem",
+                fontWeight: 600,
                 color: "#fff",
-                fontWeight: "600",
-                fontSize: "0.85rem",
+                background: buttonGradient,
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+                transition: "all 0.3s ease",
                 userSelect: "none",
-                transition: "background-color 0.2s ease",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = buttonHoverBg)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = buttonBg)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = buttonHoverGradient;
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = buttonGradient;
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              tabIndex={0}
+              aria-label="Edit program input"
             >
               Edit Input
             </button>
           </div>
         </section>
-
-        {/* Right: Output Console */}
         <section
           style={{
-            flex: 1,
-            borderRadius: "8px",
-            padding: "1rem",
+            borderRadius: "12px",
+            padding: "1.5rem",
             background: outputGradient,
-            boxShadow: darkMode
-              ? "0 4px 15px rgba(0,0,0,0.7)"
-              : "0 4px 15px rgba(0,0,0,0.1)",
+            boxShadow: "0 8px 30px rgba(0, 0, 0, 0.2), 0 4px 10px rgba(59, 130, 246, 0.1)",
             border: `1px solid ${borderColor}`,
-            color: darkMode ? "#eee" : "#222",
-            fontFamily: "monospace",
+            color: textColor,
+            fontFamily: "'JetBrains Mono', monospace",
             fontSize: "1rem",
             whiteSpace: "pre-wrap",
             overflowY: "auto",
             height: "100%",
           }}
         >
-          <h2 style={{ marginTop: 0, marginBottom: "0.8rem" }}>Output:</h2>
+          <h2 style={{ margin: "0 0 1rem", fontWeight: 600, fontSize: "1.25rem" }}>Output:</h2>
           {output}
         </section>
       </main>
-
       <InputModal
         visible={isModalOpen}
         onClose={() => setModalOpen(false)}
@@ -1166,6 +1185,7 @@ public class Main {
           localStorage.setItem("token", newToken);
         }}
         darkMode={darkMode}
+        showNotification={showNotification}
       />
       <RegisterModal
         visible={isRegisterOpen}
@@ -1175,6 +1195,7 @@ public class Main {
           localStorage.setItem("token", newToken);
         }}
         darkMode={darkMode}
+        showNotification={showNotification}
       />
       <HistoryModal
         visible={isHistoryOpen}
@@ -1182,13 +1203,168 @@ public class Main {
         snippets={history}
         darkMode={darkMode}
         onSelectSnippet={handleSelectSnippet}
+        page={page}
+        setPage={setPage}
+        totalPages={totalPages}
+        onDeleteSnippet={deleteSnippet}
+        showNotification={showNotification}
       />
-      <ProfileModal
-        visible={isProfileOpen}
-        onClose={() => setProfileOpen(false)}
-        user={user}
-        darkMode={darkMode}
-      />
+      <ProfileModal visible={isProfileOpen} onClose={() => setProfileOpen(false)} user={user} darkMode={darkMode} />
+      <div
+        style={{
+          display: isCollabModalOpen ? "flex" : "none",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: darkMode ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.5)",
+          zIndex: 1000,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            background: darkMode ? "#1e293b" : "#ffffff",
+            padding: "2rem",
+            borderRadius: "12px",
+            border: `1px solid ${borderColor}`,
+            boxShadow: "0 8px 30px rgba(0, 0, 0, 0.3)",
+            width: "100%",
+            maxWidth: "400px",
+            color: textColor,
+          }}
+        >
+          <h2 style={{ margin: "0 0 1.5rem", fontWeight: 600, fontSize: "1.5rem" }}>Collaborate</h2>
+          <button
+            onClick={startCollaboration}
+            style={{
+              padding: "0.5rem 1rem",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "#fff",
+              background: buttonGradient,
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+              transition: "all 0.3s ease",
+              width: "100%",
+              marginBottom: "1rem",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = buttonHoverGradient;
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = buttonGradient;
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            tabIndex={0}
+            aria-label="Start new collaboration"
+          >
+            Start New Collaboration
+          </button>
+          <input
+            type="text"
+            placeholder="Enter Room ID"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            style={{
+              padding: "0.5rem",
+              borderRadius: "8px",
+              border: `1px solid ${borderColor}`,
+              background: darkMode ? "rgba(30, 41, 59, 0.5)" : "rgba(255, 255, 255, 0.5)",
+              color: textColor,
+              fontSize: "0.95rem",
+              width: "100%",
+              marginBottom: "1rem",
+            }}
+          />
+          <button
+            onClick={joinCollaboration}
+            style={{
+              padding: "0.5rem 1rem",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "#fff",
+              background: buttonGradient,
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
+              transition: "all 0.3s ease",
+              width: "100%",
+              marginBottom: "1rem",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = buttonHoverGradient;
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = buttonGradient;
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            tabIndex={0}
+            aria-label="Join collaboration"
+          >
+            Join Collaboration
+          </button>
+          <button
+            onClick={() => setCollabModalOpen(false)}
+            style={{
+              padding: "0.5rem 1rem",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "#fff",
+              background: "linear-gradient(90deg, #ef4444, #dc2626)",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(239, 68, 68, 0.4)",
+              transition: "all 0.3s ease",
+              width: "100%",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "linear-gradient(90deg, #dc2626, #b91c1c)";
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "linear-gradient(90deg, #ef4444, #dc2626)";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            tabIndex={0}
+            aria-label="Close collaboration modal"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      <style jsx>{`
+        @media (max-width: 1024px) {
+          main {
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr auto;
+          }
+          section:nth-child(1) {
+            height: 60vh;
+          }
+          section:nth-child(2) {
+            height: auto;
+          }
+        }
+        @media (max-width: 768px) {
+          div[style*="height: 100vh"] {
+            padding: 1rem;
+          }
+          header div {
+            flex-wrap: wrap;
+          }
+        }
+      `}</style>
     </div>
   );
 }
+
+export default App;
