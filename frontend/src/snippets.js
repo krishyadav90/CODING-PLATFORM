@@ -400,6 +400,303 @@ int main() {
     return 0;
 }
   `.trim(),
+"Go Hello World": `
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}
+`.trim(),
+"Go Factorial": `
+package main
+
+import "fmt"
+
+func factorial(n int) int {
+    result := 1
+    for i := 1; i <= n; i++ {
+        result *= i
+    }
+    return result
+}
+
+func main() {
+    fmt.Println("Factorial of 5 is", factorial(5))
+}
+`.trim(),
+
+"Go Palindrome Checker": `
+package main
+
+import (
+    "fmt"
+    "strings"
+)
+
+func isPalindrome(s string) bool {
+    s = strings.ToLower(s)
+    for i := 0; i < len(s)/2; i++ {
+        if s[i] != s[len(s)-1-i] {
+            return false
+        }
+    }
+    return true
+}
+
+func main() {
+    test := "Racecar"
+    if isPalindrome(test) {
+        fmt.Println(test, "is a palindrome.")
+    } else {
+        fmt.Println(test, "is not a palindrome.")
+    }
+}
+`.trim(),
+
+"Go Odd/Even Checker": `
+package main
+
+import "fmt"
+
+func main() {
+    number := 7
+    if number%2 == 0 {
+        fmt.Println(number, "is even.")
+    } else {
+        fmt.Println(number, "is odd.")
+    }
+}
+`.trim(),
+
+"Go Calculator": `
+package main
+
+import (
+    "fmt"
+)
+
+func calculator(a float64, b float64, operator string) interface{} {
+    switch operator {
+    case "+":
+        return a + b
+    case "-":
+        return a - b
+    case "*":
+        return a * b
+    case "/":
+        if b != 0 {
+            return a / b
+        }
+        return "Error: Divide by zero"
+    default:
+        return "Invalid operator"
+    }
+}
+
+func main() {
+    fmt.Println(calculator(10, 5, "+"))  // 15
+    fmt.Println(calculator(10, 0, "/"))  // Error: Divide by zero
+}
+`.trim(),
+"Ruby Hello World": `
+puts "Hello, World!"
+`.trim(),
+
+"Ruby Factorial": `
+def factorial(n)
+  result = 1
+  (1..n).each { |i| result *= i }
+  result
+end
+
+puts factorial(5)  # Output: 120
+`.trim(),
+
+"Ruby Palindrome Checker": `
+def palindrome?(str)
+  str == str.reverse
+end
+
+test_str = "racecar"
+if palindrome?(test_str)
+  puts "#{test_str} is a palindrome."
+else
+  puts "#{test_str} is not a palindrome."
+end
+`.trim(),
+
+"Ruby Odd/Even Checker": `
+def odd_even(number)
+  if number % 2 == 0
+    puts "#{number} is even."
+  else
+    puts "#{number} is odd."
+  end
+end
+
+odd_even(10)  # 10 is even.
+odd_even(7)   # 7 is odd.
+`.trim(),
+
+"Ruby Calculator": `
+def calculator(a, b, operator)
+  case operator
+  when "+"
+    a + b
+  when "-"
+    a - b
+  when "*"
+    a * b
+  when "/"
+    if b != 0
+      a.to_f / b
+    else
+      "Error: Divide by zero"
+    end
+  else
+    "Invalid operator"
+  end
+end
+
+puts calculator(10, 5, "+")  # 15
+puts calculator(10, 0, "/")  # Error: Divide by zero
+`.trim(),
+"TypeScript Hello World": `
+console.log("Hello, World!");
+`.trim(),
+
+"TypeScript Factorial": `
+function factorial(n: number): number {
+  let result = 1;
+  for (let i = 1; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+
+console.log(factorial(5)); // Output: 120
+`.trim(),
+
+"TypeScript Palindrome Checker": `
+function isPalindrome(str: string): boolean {
+  return str === str.split('').reverse().join('');
+}
+
+const testStr = "racecar";
+console.log(\`\${testStr} is \${isPalindrome(testStr) ? "" : "not "}a palindrome.\`);
+`.trim(),
+
+"TypeScript Odd/Even Checker": `
+function checkOddEven(number: number): void {
+  if (number % 2 === 0) {
+    console.log(\`\${number} is even.\`);
+  } else {
+    console.log(\`\${number} is odd.\`);
+  }
+}
+
+checkOddEven(10); // 10 is even.
+checkOddEven(7);  // 7 is odd.
+`.trim(),
+
+"TypeScript Calculator": `
+function calculator(a: number, b: number, operator: string): number | string {
+  switch (operator) {
+    case '+':
+      return a + b;
+    case '-':
+      return a - b;
+    case '*':
+      return a * b;
+    case '/':
+      if (b !== 0) {
+        return a / b;
+      } else {
+        return "Error: Divide by zero";
+      }
+    default:
+      return "Invalid operator";
+  }
+}
+
+console.log(calculator(10, 5, '+')); // 15
+console.log(calculator(10, 0, '/')); // Error: Divide by zero
+`.trim(),
+"PHP Hello World": `
+<?php
+echo "Hello, World!";
+?>
+`.trim(),
+
+"PHP Factorial": `
+<?php
+function factorial($n) {
+    $result = 1;
+    for ($i = 1; $i <= $n; $i++) {
+        $result *= $i;
+    }
+    return $result;
+}
+
+echo factorial(5); // Output: 120
+?>
+`.trim(),
+
+"PHP Palindrome Checker": `
+<?php
+function isPalindrome($str) {
+    return $str === strrev($str);
+}
+
+$testStr = "racecar";
+if (isPalindrome($testStr)) {
+    echo "$testStr is a palindrome.";
+} else {
+    echo "$testStr is not a palindrome.";
+}
+?>
+`.trim(),
+
+"PHP Odd/Even Checker": `
+<?php
+function checkOddEven($number) {
+    if ($number % 2 == 0) {
+        echo "$number is even.";
+    } else {
+        echo "$number is odd.";
+    }
+}
+
+checkOddEven(10); // 10 is even.
+?>
+`.trim(),
+
+"PHP Calculator": `
+<?php
+function calculator($a, $b, $operator) {
+    switch ($operator) {
+        case '+':
+            return $a + $b;
+        case '-':
+            return $a - $b;
+        case '*':
+            return $a * $b;
+        case '/':
+            if ($b != 0) {
+                return $a / $b;
+            } else {
+                return "Error: Divide by zero";
+            }
+        default:
+            return "Invalid operator";
+    }
+}
+
+echo calculator(10, 5, '+'); // 15
+?>
+`.trim(),
 };
 
 export default snippets;

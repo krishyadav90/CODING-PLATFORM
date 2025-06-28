@@ -13,6 +13,7 @@ import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { MonacoBinding } from "y-monaco";
 import io from "socket.io-client";
+import { ShareIcon, SunIcon, MoonIcon } from "@heroicons/react/24/outline"; // Added Heroicons
 
 // Configure Axios baseURL
 axios.defaults.baseURL = "http://localhost:5000";
@@ -171,6 +172,11 @@ function App() {
       };
     }
   }, [collabRoomId, token, user]);
+
+  // Update user profile
+  const onProfileUpdate = (updatedUser) => {
+    setUser(updatedUser);
+  };
 
   // Run code
   const runCode = async () => {
@@ -428,14 +434,14 @@ function App() {
       const response = await axios.delete(`/delete-snippet/${snippetId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setOutput("Snippet deleted successfully");
-      showNotification("Snippet deleted successfully", "success");
+      setOutput("Code deleted successfully");
+      showNotification("Code deleted successfully", "success");
       setPage(1);
       fetchHistory();
     } catch (err) {
       const errorMsg = err.response?.status === 429
         ? "Too many requests. Please try again later."
-        : err.response?.data?.error || "Failed to delete snippet";
+        : err.response?.data?.error || "Failed to delete code";
       setOutput(`Error: ${errorMsg}`);
       showNotification(errorMsg, "error");
     }
@@ -466,6 +472,11 @@ function App() {
     }
     setLanguage(snippet.language);
     setHistoryOpen(false);
+  };
+
+  // Clear output
+  const clearOutput = () => {
+    setOutput("");
   };
 
   // Styling variables
@@ -717,27 +728,31 @@ function App() {
             </>
           )}
           <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            style={{
-              padding: "0.5rem",
-              fontSize: "0.95rem",
-              fontWeight: 500,
-              borderRadius: "8px",
-              border: `1px solid ${borderColor}`,
-              background: darkMode ? "rgba(30, 41, 59, 0.5)" : "rgba(255, 255, 255, 0.5)",
-              color: textColor,
-              cursor: "pointer",
-              backdropFilter: "blur(4px)",
-              transition: "all 0.3s ease",
-            }}
-          >
-            <option value="javascript">JavaScript</option>
-            <option value="java">Java</option>
-            <option value="python">Python</option>
-            <option value="c">C</option>
-            <option value="cpp">C++</option>
-          </select>
+  value={language}
+  onChange={(e) => setLanguage(e.target.value)}
+  style={{
+    padding: "0.5rem",
+    fontSize: "0.95rem",
+    fontWeight: 500,
+    borderRadius: "8px",
+    border: `1px solid ${borderColor}`,
+    background: darkMode ? "rgba(30, 41, 59, 0.5)" : "rgba(255, 255, 255, 0.5)",
+    color: textColor,
+    cursor: "pointer",
+    backdropFilter: "blur(4px)",
+    transition: "all 0.3s ease",
+  }}
+>
+  <option value="javascript">JavaScript</option>
+  <option value="java">Java</option>
+  <option value="python">Python</option>
+  <option value="c">C</option>
+  <option value="cpp">C++</option>
+  <option value="go">Go</option>
+  <option value="ruby">Ruby</option>
+  <option value="typescript">TypeScript</option>
+  <option value="php">PHP</option>
+</select>
           <button
             onClick={runCode}
             style={{
@@ -780,6 +795,9 @@ function App() {
               boxShadow: "0 4px 15px rgba(59, 130, 246, 0.4)",
               transition: "all 0.3s ease",
               userSelect: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = buttonHoverGradient;
@@ -792,7 +810,8 @@ function App() {
             tabIndex={0}
             aria-label="Share code"
           >
-            Share Code
+            <ShareIcon style={{ width: "1.2rem", height: "1.2rem" }} />
+            Share
           </button>
           <button
             onClick={() => setCollabModalOpen(true)}
@@ -855,7 +874,11 @@ function App() {
             aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
             title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
-            {darkMode ? "🌞" : "🌙"}
+            {darkMode ? (
+              <SunIcon style={{ width: "1.2rem", height: "1.2rem" }} />
+            ) : (
+              <MoonIcon style={{ width: "1.2rem", height: "1.2rem" }} />
+            )}
           </button>
         </div>
       </header>
@@ -1165,10 +1188,42 @@ function App() {
             whiteSpace: "pre-wrap",
             overflowY: "auto",
             height: "100%",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <h2 style={{ margin: "0 0 1rem", fontWeight: 600, fontSize: "1.25rem" }}>Output:</h2>
-          {output}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h2 style={{ margin: 0, fontWeight: 600, fontSize: "1.25rem" }}>Output:</h2>
+            <button
+              onClick={clearOutput}
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                color: "#fff",
+                background: "linear-gradient(90deg, #ef4444, #dc2626)",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(239, 68, 68, 0.4)",
+                transition: "all 0.3s ease",
+                userSelect: "none",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "linear-gradient(90deg, #dc2626, #b91c1c)";
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "linear-gradient(90deg, #ef4444, #dc2626)";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              tabIndex={0}
+              aria-label="Clear output"
+            >
+              Clear
+            </button>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto" }}>{output}</div>
         </section>
       </main>
       <InputModal
@@ -1209,7 +1264,14 @@ function App() {
         onDeleteSnippet={deleteSnippet}
         showNotification={showNotification}
       />
-      <ProfileModal visible={isProfileOpen} onClose={() => setProfileOpen(false)} user={user} darkMode={darkMode} />
+      <ProfileModal
+        visible={isProfileOpen}
+        onClose={() => setProfileOpen(false)}
+        user={user}
+        darkMode={darkMode}
+        showNotification={showNotification}
+        onProfileUpdate={onProfileUpdate}
+      />
       <div
         style={{
           display: isCollabModalOpen ? "flex" : "none",
